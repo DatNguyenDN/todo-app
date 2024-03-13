@@ -1,144 +1,173 @@
 import { useEffect, useState } from "react";
 
 function App() {
-  const [todo, setTodo] = useState("");
-  const [todolist, setTodoList] = useState([]);
+  const [items, setItems] = useState([]);
 
-  const [isEdit, setIsEdit] = useState(false);
-  const [editIndex, setEditIndex] = useState(null);
-
-  const [completed, setCompleted] = useState(0);
-
-  const [completedList, setCompletedList] = useState([]);
-
-  const handleAdd = () => {
-    const newTodo = {
-      index: todolist.length + 1,
-      todo,
-    };
-    if (newTodo.todo === "") return;
-    setTodoList([...todolist, todo]);
-    setTodo("");
+  const handleAdd = (item) => {
+    setItems((items) => [...items, item]);
   };
 
-  const handleDelete = (deleteItem) => {
-    const updateList = todolist.filter((todo) => todo.index !== deleteItem);
-    setTodoList(updateList);
+  const handleDelete = (id) => {
+    setItems((items) => items.filter((item) => item.id !== id));
   };
 
-  const handleEdit = (value, index) => {
-    setIsEdit(true);
-    setTodo(value);
-    setEditIndex(index);
+  const toggleItem = (id) => {
+    setItems((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, completed: !item.completed } : item
+      )
+    );
   };
 
-  const submitEdit = () => {
-    const updateList = [...todolist];
-    updateList[editIndex] = { ...updateList[editIndex], todo };
-    setTodoList(updateList);
-    setTodo("");
-    setIsEdit(false);
+  const handleEdit = (id) => {
+    setItems((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, isEdit: true } : { ...item, isEdit: false }
+      )
+    );
   };
 
-  console.log(completedList);
-
-  const handleCompleted = (completedTodo) => {
-    let updatedList = [...completedList];
-    if (!updatedList.includes(completedTodo)) {
-      updatedList.push(completedTodo);
-      setCompleted((prev) => prev + 1);
-    } else {
-      updatedList = updatedList.filter((item) => item !== completedTodo);
-      setCompleted((prev) => prev - 1);
-    }
-    setCompletedList(updatedList);
+  const submitEdit = (id, newValue) => {
+    setItems((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, desc: newValue, isEdit: false } : item
+      )
+    );
   };
-
-  //save
-  useEffect(() => {
-    localStorage.setItem("todo-list", JSON.stringify(todolist));
-  }, [todolist]);
 
   //load
   useEffect(() => {
-    const savedList = JSON.parse(localStorage.getItem("todo-list"));
-    if (savedList) setTodoList(savedList);
+    const savedList = JSON.parse(localStorage.getItem("items-list"));
+    if (savedList) setItems(savedList);
   }, []);
 
-  const handleSortCompleted = () => {
-    let updateList = [];
-    if (completedList.length === 0) return;
-    else {
-      updateList = todolist.filter((item) => completedList.includes(item));
-      setTodoList(updateList);
-    }
-  };
-
-  const handleSortUnCompleted = () => {
-    let updateList = [];
-    if (completedList.length === 0) return;
-    else {
-      updateList = todolist.filter((item) => !completedList.includes(item));
-      setTodoList(updateList);
-    }
-  };
+  //save
+  useEffect(() => {
+    localStorage.setItem("items-list", JSON.stringify(items));
+  }, [items]);
 
   return (
-    <div className=" p-[5%] flex flex-col justify-center  items-center">
-      <div className="flex gap-5 p-5">
-        <input
-          className="border"
-          type="text"
-          value={todo}
-          onChange={(e) => setTodo(e.target.value)}
-        />
-        <button
-          className="bg-yellow-400 p-3 text-xl"
-          onClick={isEdit ? submitEdit : handleAdd}
-        >
-          {isEdit ? "Update" : "Add"}
-        </button>
-      </div>
-
-      <div className="p-5 mb-5">
-        <ul>
-          {todolist.map((todo) => {
-            return (
-              <li key={todo} className="flex justify-start gap-5">
-                <input
-                  type="checkbox"
-                  id={todo}
-                  className="after:line-through"
-                  onChange={() => handleCompleted(todo)}
-                />
-                {todo}
-                <button
-                  className="bg-yellow-400  text-md"
-                  onClick={() => handleDelete(todo)}
-                >
-                  Deleted
-                </button>
-                <button
-                  className="bg-green-400"
-                  onClick={() => handleEdit(todo)}
-                >
-                  Edit
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-      <h1>Total Tasks: {todolist.length}</h1>
-      <h1>Completed: {completed}</h1>
-      <div>
-        <div className="flex flex-col">
-          <button onClick={handleSortCompleted}>Sort by completed</button>
-          <button onClick={handleSortUnCompleted}>Sort by Uncompleted</button>
-        </div>
-      </div>
+    <div className="p-20 h-100vh w-full flex flex-col justify-center items-center ">
+      <Form onAdd={handleAdd} />
+      <ItemList
+        items={items}
+        onDelete={handleDelete}
+        onToggle={toggleItem}
+        onEdit={handleEdit}
+        onSubmitEdit={submitEdit}
+      />
     </div>
   );
 }
 
 export default App;
+
+function Form({ onAdd }) {
+  const [input, setInput] = useState("");
+
+  function onSubmit(e) {
+    e.preventDefault();
+    if (input === "") return;
+    const newItem = {
+      id: Math.random(1),
+      desc: input,
+      completed: false,
+    };
+    onAdd(newItem);
+    console.log(newItem);
+    setInput("");
+  }
+  return (
+    <>
+      <form onSubmit={onSubmit}>
+        <input
+          className="bg-blue-500 p-2 mr-10 rounded-xl  text-center"
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button
+          className="bg-emerald-500 p-2 rounded-xl text-white"
+          type="submit"
+        >
+          Add
+        </button>
+      </form>
+    </>
+  );
+}
+
+function ItemList({ items, onDelete, onToggle, onEdit, onSubmitEdit }) {
+  const [sort, setSort] = useState("all");
+  console.log(items);
+
+  let sortItems;
+  if (sort === "all") {
+    sortItems = items;
+  }
+  if (sort === "completed") {
+    sortItems = items.filter((item) => item.completed);
+  }
+  if (sort === "uncompleted") {
+    sortItems = items.filter((items) => !items.completed);
+  }
+  return (
+    <div>
+      <ul>
+        {sortItems.map((item) => (
+          <Item
+            key={item.id}
+            item={item}
+            onDelete={onDelete}
+            onToggle={onToggle}
+            onEdit={onEdit}
+            onSubmitEdit={onSubmitEdit}
+          />
+        ))}
+      </ul>
+      <div className="mt-10">
+        <select value={sort} onChange={(e) => setSort(e.target.value)}>
+          <option value="all">All</option>
+          <option value="completed">Completed</option>
+          <option value="uncompleted">Un Completed</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function Item({ item, onDelete, onToggle, onEdit, onSubmitEdit }) {
+  const [editValue, setEditValue] = useState(item.desc);
+
+  const handleSaveEdit = () => {
+    onSubmitEdit(item.id, editValue);
+  };
+
+  return (
+    <div className="mt-5">
+      <li className={item.completed ? "line-through flex gap-5" : "flex gap-5"}>
+        <input
+          type="checkbox"
+          checked={item.completed}
+          onChange={() => onToggle(item.id)}
+        />
+        {item.isEdit ? (
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            className="bg-pink-300 rounded-xl p-2 text-center"
+          />
+        ) : (
+          item.desc
+        )}
+        <button
+          onClick={() => (item.isEdit ? handleSaveEdit() : onEdit(item.id))}
+        >
+          {item.isEdit ? "Save" : "Edit"}
+        </button>
+        <button onClick={() => onDelete(item.id)}>Delete</button>
+      </li>
+    </div>
+  );
+}
